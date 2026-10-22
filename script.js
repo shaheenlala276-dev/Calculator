@@ -1,23 +1,30 @@
 
+"use strict";
+
 const resultDisplay = document.getElementById("result");
 const historyDisplay = document.getElementById("history");
 const toast = document.getElementById("toast");
+const scientificPanel = document.getElementById("scientificPanel");
+const mathButton = document.querySelector('[data-tool="math"]');
+const angleButton = document.querySelector('[data-sci="angle"]');
 
 let expression = "";
 let justCalculated = false;
 let lastAnswer = 0;
+let scientificDegrees = true;
 let calculationHistory = [];
 
 const operators = ["+", "−", "×", "÷"];
 
 function render() {
   resultDisplay.textContent = expression;
-  resultDisplay.style.fontSize =
-    expression.length > 12
-      ? `clamp(25px, ${90 / expression.length}vw, 42px)`
-      : "";
 
-  resultDisplay.scrollLeft = resultDisplay.scrollWidth;
+  if (expression.length > 12) {
+    resultDisplay.style.fontSize =
+      `clamp(24px, ${Math.max(5, 90 / expression.length)}vw, 42px)`;
+  } else {
+    resultDisplay.style.fontSize = "";
+  }
 }
 
 function notify(message) {
@@ -25,6 +32,7 @@ function notify(message) {
   toast.classList.add("show");
 
   clearTimeout(notify.timer);
+
   notify.timer = setTimeout(() => {
     toast.classList.remove("show");
   }, 1800);
@@ -92,6 +100,8 @@ function appendValue(value) {
       expression = expression.slice(0, -1);
     }
 
+    if (expression.endsWith("(") && value !== "−") return;
+
     expression += value;
     render();
     return;
@@ -118,7 +128,7 @@ function appendValue(value) {
   }
 
   if (
-    value.match(/^\d$/) &&
+    /^\d/.test(value) &&
     (last === ")" || last === "%")
   ) {
     expression += "×";
@@ -135,15 +145,16 @@ function appendValue(value) {
   render();
 }
 
-/* Safe arithmetic parser: no eval() or Function() */
+/* Safe arithmetic parser; no eval() is used. */
 function calculate(source) {
-  let input = source
+  const input = source
     .replace(/×/g, "*")
     .replace(/÷/g, "/")
     .replace(/−/g, "-")
     .replace(/\s/g, "");
 
-  if (!input) throw new Error("Empty expression");
+  if (!input) throw new Error("Enter a calculation");
+
   if (!/^[\d.+\-*/()%]+$/.test(input)) {
     throw new Error("Invalid expression");
   }
@@ -156,6 +167,7 @@ function calculate(source) {
     while (input[pos] === "+" || input[pos] === "-") {
       const op = input[pos++];
       const right = parseTerm();
+
       value = op === "+" ? value + right : value - right;
     }
 
@@ -165,10 +177,7 @@ function calculate(source) {
   function parseTerm() {
     let value = parseUnary();
 
-    while (
-      input[pos] === "*" ||
-      input[pos] === "/"
-    ) {
+    while (input[pos] === "*" || input[pos] === "/") {
       const op = input[pos++];
       const right = parseUnary();
 
@@ -210,6 +219,7 @@ function calculate(source) {
   function parsePrimary() {
     if (input[pos] === "(") {
       pos++;
+
       const value = parseExpression();
 
       if (input[pos] !== ")") {
@@ -253,12 +263,10 @@ function calculateResult() {
   try {
     let source = expression;
 
-    // Automatically close unfinished brackets.
     const openCount = (source.match(/\(/g) || []).length;
     const closeCount = (source.match(/\)/g) || []).length;
-    source += ")".repeat(Math.max(0, openCount - closeCount));
 
-    // Remove incomplete operators at the end.
+    source += ")".repeat(Math.max(0, openCount - closeCount));
     source = source.replace(/[+\−×÷.]+$/, "");
 
     const answer = calculate(source);
@@ -278,11 +286,7 @@ function calculateResult() {
 
     render();
   } catch (error) {
-    notify(
-      error.message === "Cannot divide by zero"
-        ? "Cannot divide by zero"
-        : "Invalid calculation"
-    );
+    notify(error.message || "Invalid calculation");
   }
 }
 
@@ -293,14 +297,18 @@ function toggleSign() {
     return;
   }
 
-  if (justCalculated) {
-    expression = formatNumber(-lastAnswer);
-    justCalculated = false;
+  try {
+    const value = calculate(expression);
+
+    expression = formatNumber(-value);
+    lastAnswer = -value;
+    justCalculated = true;
     render();
     return;
+  } catch {
+    // If the expression is unfinished, toggle its last number below.
   }
 
-  // Toggle the sign of the last number.
   const match = expression.match(/(\d*\.?\d+)(%?)$/);
 
   if (!match) {
@@ -309,6 +317,7 @@ function toggleSign() {
     } else {
       expression += "−";
     }
+
     render();
     return;
   }
@@ -316,13 +325,21 @@ function toggleSign() {
   const start = match.index;
   const number = match[1];
   const percent = match[2];
-  const before = expression.slice(0, start);
+  let before = expression.slice(0, start);
 
-  if (before.endsWith("−") &&
-      (before.length === 1 ||
-       operators.includes(before.slice(-2, -1)) ||
-       before.endsWith("("))) {
-    expression = before.slice(0, -1) + number + percent;
+  if (before.endsWith("−")) {
+    const previous = before.slice(0, -1).slice(-1);
+
+    if (
+      before.length === 1 ||
+      operators.includes(previous) ||
+      previous === "("
+    ) {
+      before = before.slice(0, -1);
+      expression = before + number + percent;
+    } else {
+      expression = before + "−" + number + percent;
+    }
   } else {
     expression = before + "−" + number + percent;
   }
@@ -330,25 +347,261 @@ function toggleSign() {
   render();
 }
 
+/* Main keypad */
 document.querySelectorAll(".key").forEach(button => {
   button.addEventListener("click", () => {
     const action = button.dataset.action;
     const value = button.dataset.value;
 
-    if (action === "clear") clearAll();
-    else if (action === "equals") calculateResult();
-    else if (action === "sign") toggleSign();
-    else if (value !== undefined) appendValue(value);
+    if (action === "clear") {
+      clearAll();
+    } else if (action === "equals") {
+      calculateResult();
+    } else if (action === "sign") {
+      toggleSign();
+    } else if (value !== undefined) {
+      appendValue(value);
+    }
   });
 });
 
-document.getElementById("delete").addEventListener(
-  "click",
-  deleteLast
-);
+/* Delete button */
+document.getElementById("delete").addEventListener("click", deleteLast);
 
-/* Keyboard support */
+/* Scientific mode toggle */
+mathButton.addEventListener("click", () => {
+  scientificPanel.hidden = !scientificPanel.hidden;
+
+  mathButton.setAttribute(
+    "aria-expanded",
+    String(!scientificPanel.hidden)
+  );
+});
+
+/* Scientific calculations */
+function scientificValue() {
+  if (!expression || expression === "−") {
+    throw new Error("Enter a number first");
+  }
+
+  return calculate(expression);
+}
+
+function setScientificResult(value, label) {
+  if (!Number.isFinite(value)) {
+    notify("Math error: result is out of range");
+    return;
+  }
+
+  calculationHistory.unshift({
+    expression: label,
+    answer: formatNumber(value)
+  });
+
+  calculationHistory = calculationHistory.slice(0, 30);
+
+  historyDisplay.textContent = label;
+  expression = formatNumber(value);
+  lastAnswer = value;
+  justCalculated = true;
+
+  render();
+}
+
+function factorial(n) {
+  if (n < 0 || !Number.isInteger(n) || n > 170) {
+    throw new Error("Factorial needs a whole number from 0 to 170");
+  }
+
+  let answer = 1;
+
+  for (let i = 2; i <= n; i++) {
+    answer *= i;
+  }
+
+  return answer;
+}
+
+function insertConstant(value) {
+  if (justCalculated) {
+    expression = "";
+    justCalculated = false;
+  }
+
+  const last = expression.slice(-1);
+
+  if (/[\d)%]$/.test(last)) {
+    expression += "×";
+  }
+
+  expression += value;
+  render();
+}
+
+scientificPanel.querySelectorAll("[data-sci]").forEach(button => {
+  button.addEventListener("click", () => {
+    const operation = button.dataset.sci;
+
+    if (operation === "angle") {
+      scientificDegrees = !scientificDegrees;
+      button.textContent = scientificDegrees ? "DEG" : "RAD";
+
+      notify(
+        scientificDegrees
+          ? "Angle mode: Degrees"
+          : "Angle mode: Radians"
+      );
+
+      return;
+    }
+
+    if (operation === "pi") {
+      insertConstant(String(Math.PI));
+      return;
+    }
+
+    if (operation === "e") {
+      insertConstant(String(Math.E));
+      return;
+    }
+
+    let x;
+
+    try {
+      x = scientificValue();
+    } catch (error) {
+      notify(error.message);
+      return;
+    }
+
+    if (operation === "power") {
+      const input = prompt("Enter the power (y):", "2");
+
+      if (input === null || !input.trim()) return;
+
+      const power = Number(input);
+
+      if (!Number.isFinite(power)) {
+        notify("Enter a valid power");
+        return;
+      }
+
+      setScientificResult(
+        Math.pow(x, power),
+        `${x} ^ ${power} =`
+      );
+
+      return;
+    }
+
+    const angle = scientificDegrees
+      ? x * Math.PI / 180
+      : x;
+
+    let answer;
+
+    try {
+      switch (operation) {
+        case "sin":
+          answer = Math.sin(angle);
+          break;
+
+        case "cos":
+          answer = Math.cos(angle);
+          break;
+
+        case "tan":
+          if (Math.abs(Math.cos(angle)) < 1e-12) {
+            throw new Error("Tangent is undefined at this angle");
+          }
+
+          answer = Math.tan(angle);
+          break;
+
+        case "sqrt":
+          if (x < 0) {
+            throw new Error("Square root requires a non-negative number");
+          }
+
+          answer = Math.sqrt(x);
+          break;
+
+        case "square":
+          answer = x * x;
+          break;
+
+        case "log":
+          if (x <= 0) throw new Error("Log requires a positive number");
+
+          answer = Math.log10(x);
+          break;
+
+        case "ln":
+          if (x <= 0) throw new Error("Ln requires a positive number");
+
+          answer = Math.log(x);
+          break;
+
+        case "inverse":
+          if (x === 0) throw new Error("Cannot divide by zero");
+
+          answer = 1 / x;
+          break;
+
+        case "factorial":
+          answer = factorial(x);
+          break;
+
+        case "abs":
+          answer = Math.abs(x);
+          break;
+
+        case "exp":
+          answer = Math.exp(x);
+          break;
+
+        case "tenpower":
+          answer = Math.pow(10, x);
+          break;
+
+        default:
+          return;
+      }
+
+      setScientificResult(
+        answer,
+        `${button.textContent}(${formatNumber(x)}) =`
+      );
+    } catch (error) {
+      notify(error.message || "Math error");
+    }
+  });
+});
+
+/* History icon */
+document.querySelector('[data-tool="history"]').addEventListener("click", () => {
+  if (calculationHistory.length === 0) {
+    notify("No calculation history yet");
+    return;
+  }
+
+  const lines = calculationHistory
+    .slice(0, 10)
+    .map(item => `${item.expression} ${item.answer}`);
+
+  historyDisplay.textContent = lines[0];
+  notify(`Last answer: ${calculationHistory[0].answer}`);
+});
+
+/* Unit converter placeholder */
+document.querySelector('[data-tool="ruler"]').addEventListener("click", () => {
+  notify("Unit converter is not implemented yet");
+});
+
+/* Physical keyboard support */
 document.addEventListener("keydown", event => {
+  if (event.ctrlKey || event.altKey || event.metaKey) return;
+
   const key = event.key;
 
   if (/^\d$/.test(key) || key === ".") {
@@ -367,6 +620,7 @@ document.addEventListener("keydown", event => {
   } else if (key === "(" || key === ")") {
     appendValue(key);
   } else if (key === "Enter" || key === "=") {
+    event.preventDefault();
     calculateResult();
   } else if (key === "Backspace") {
     deleteLast();
@@ -375,27 +629,5 @@ document.addEventListener("keydown", event => {
   }
 });
 
-/* Utility buttons */
-document.querySelectorAll("[data-tool]").forEach(button => {
-  button.addEventListener("click", () => {
-    const tool = button.dataset.tool;
-
-    if (tool === "history") {
-      if (calculationHistory.length === 0) {
-        notify("No calculation history yet");
-      } else {
-        const latest = calculationHistory[0];
-        historyDisplay.textContent =
-          latest.expression + " = " + latest.answer;
-        notify("Latest calculation");
-      }
-    } else if (tool === "ruler") {
-      notify("Unit converter can be added next");
-    } else if (tool === "math") {
-      notify("Scientific mode can be added next");
-    }
-  });
-});
-
+/* Initial screen */
 render();
-
