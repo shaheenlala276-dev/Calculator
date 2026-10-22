@@ -1,1 +1,85 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#000000">
+  <title>Samsung Calculator Clone</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="calculator">
+
+    <section class="display" aria-label="Calculator display">
+      <div id="history" class="history"></div>
+      <div id="result" class="result" aria-live="polite"></div>
+    </section>
+
+    <section class="tools" aria-label="Calculator tools">
+      <button class="tool-btn" data-tool="history" aria-label="History">
+        <svg viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="15.5"/>
+          <path d="M20 10v10h8"/>
+        </svg>
+      </button>
+
+      <button class="tool-btn" data-tool="ruler" aria-label="Unit converter">
+        <svg viewBox="0 0 40 40" fill="none">
+          <rect x="5" y="12" width="30" height="16" rx="3"/>
+          <path d="M11 12v7m5-7v4m5-4v7m5-7v4m5-4v7"/>
+        </svg>
+      </button>
+
+      <button class="tool-btn" data-tool="math" aria-label="Scientific calculator">
+        <svg viewBox="0 0 40 40" fill="none">
+          <rect x="4" y="4" width="32" height="32" rx="4"/>
+          <path d="M10 12l3 3 5-7m-8 18h7m-7 4h7m5-18h9m-5-5v10m-4 7h9m-9 4h9"/>
+        </svg>
+      </button>
+
+      <button class="tool-btn delete-tool" id="delete" aria-label="Delete last character">
+        <svg viewBox="0 0 40 40" fill="none">
+          <path d="M15 7H32Q35 7 35 11V29Q35 33 31 33H15L5 20Z"/>
+          <path d="M19 15l9 10m0-10l-9 10"/>
+        </svg>
+      </button>
+    </section>
+
+    <div class="separator"></div>
+
+    <section class="keypad" aria-label="Calculator keypad">
+      <button class="key outline" data-action="clear">C</button>
+      <button class="key symbol" data-value="(">( )</button>
+      <button class="key symbol" data-value="%">%</button>
+      <button class="key operator" data-value="÷">÷</button>
+
+      <button class="key outline" data-value="7">7</button>
+      <button class="key outline" data-value="8">8</button>
+      <button class="key outline" data-value="9">9</button>
+      <button class="key operator" data-value="×">×</button>
+
+      <button class="key outline" data-value="4">4</button>
+      <button class="key outline" data-value="5">5</button>
+      <button class="key outline" data-value="6">6</button>
+      <button class="key operator" data-value="−">−</button>
+
+      <button class="key outline" data-value="1">1</button>
+      <button class="key outline" data-value="2">2</button>
+      <button class="key outline" data-value="3">3</button>
+      <button class="key operator" data-value="+">+</button>
+
+      <button class="key symbol" data-action="sign">+/−</button>
+      <button class="key outline" data-value="0">0</button>
+      <button class="key outline decimal" data-value=".">.</button>
+      <button class="key equals" data-action="equals">=</button>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
