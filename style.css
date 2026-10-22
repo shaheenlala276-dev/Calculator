@@ -21,7 +21,7 @@ body {
   overflow: hidden;
   background: var(--background);
   color: var(--white);
-  font-family: "Arial", sans-serif;
+  font-family: Arial, sans-serif;
 }
 
 body {
@@ -49,7 +49,6 @@ button {
   background: #000;
 }
 
-/* Large empty display area */
 .display {
   flex: 1 1 auto;
   min-height: 0;
@@ -81,7 +80,6 @@ button {
   text-overflow: clip;
 }
 
-/* Green utility icons */
 .tools {
   flex: 0 0 66px;
   display: grid;
@@ -120,7 +118,6 @@ button {
   margin-bottom: 9.3%;
 }
 
-/* Five rows, four columns */
 .keypad {
   flex: 0 0 60%;
   min-height: 0;
@@ -146,13 +143,6 @@ button {
   transition: background 0.12s ease, transform 0.12s ease;
 }
 
-.key:active,
-.tool-btn:active {
-  transform: scale(0.92);
-  background-color: #30383c;
-}
-
-/* Outlined digit style inspired by the reference */
 .outline {
   color: #171c1f;
   -webkit-text-stroke: 1.15px #fff;
@@ -184,9 +174,44 @@ button {
   background: #3382aa;
 }
 
+.key:active,
+.tool-btn:active {
+  transform: scale(0.92);
+  background-color: #30383c;
+}
+
 .decimal {
   font-size: 42px;
   padding-bottom: 8px;
+}
+
+/* Scientific calculator */
+.scientific-panel {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 12px;
+  flex: 0 0 auto;
+}
+
+.scientific-panel[hidden] {
+  display: none;
+}
+
+.sci-key {
+  min-width: 0;
+  min-height: 42px;
+  border-radius: 22px;
+  background: #20272a;
+  color: var(--green);
+  font-size: 17px;
+  border: 1px solid #30383c;
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+
+.sci-key:active {
+  background: #34434a;
+  transform: scale(.96);
 }
 
 .toast {
@@ -202,6 +227,9 @@ button {
   opacity: 0;
   pointer-events: none;
   transition: 0.2s ease;
+  z-index: 10;
+  max-width: 90vw;
+  text-align: center;
 }
 
 .toast.show {
@@ -209,7 +237,18 @@ button {
   transform: translate(-50%, 0);
 }
 
-/* Short screens */
+@media (max-height: 750px) {
+  .sci-key {
+    min-height: 32px;
+    font-size: 15px;
+  }
+
+  .scientific-panel {
+    gap: 5px;
+    margin-bottom: 7px;
+  }
+}
+
 @media (max-height: 700px) {
   .calculator {
     padding-bottom: 2%;
@@ -240,8 +279,27 @@ button {
   }
 
   .keypad {
-    flex-basis: 64%;
+    flex: 1 1 0;
+    min-height: 0;
     row-gap: 1%;
+  }
+
+  .scientific-panel {
+    gap: 3px;
+    margin-bottom: 5px;
+  }
+
+  .sci-key {
+    min-height: 26px;
+    border-radius: 14px;
+    font-size: 13px;
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+  }
+}
